@@ -1,0 +1,554 @@
+1.1
+
+.model small
+.stack 100h
+
+.data
+    ; the $ sign is required to terminate the string for function 09h
+    msg db 'the result is: $'
+
+.code
+main proc
+    ; 1. initialize data segment
+    mov ax, @data
+    mov ds, ax
+
+    ; 2. print the message string
+    lea dx, msg     ; load address of msg
+    mov ah, 09h     ; dos function to print string
+    int 21h
+
+    ; 3. initialize registers with values
+    mov al, 3       ; multiplicand 
+    mov bl, 4       ; multiplier 
+    
+    ; 4. perform multiplication
+    mul bl          ; ax = al * bl (3 * 4 = 12)
+    
+    ; 5. split 12 into digits using aam
+    aam             ; ah = 1, al = 2
+    
+    ; 6. convert digits to ascii
+    add ah, 30h     ; convert 1 to '1'
+    add al, 30h     ; convert 2 to '2'
+    
+    ; 7. print the digits
+    mov bx, ax      ; save digits (bh='1', bl='2')
+    
+    mov ah, 02h     ; function to print single character
+    
+    mov dl, bh      ; move '1' to dl
+    int 21h         ; print it
+    
+    mov dl, bl      ; move '2' to dl
+    int 21h         ; print it
+    
+    ; exit program
+    mov ah, 4ch
+    int 21h
+main endp
+end main
+
+1.2
+
+.MODEL SMALL
+.STACK 100H
+.DATA
+    MSG1 DB 'Enter multiplier and multiplicand value respectively $'
+    MSG2 DB 0DH, 0AH, 'multiplication result is: $'
+.CODE
+MAIN PROC
+    MOV AX, @DATA
+    MOV DS, AX
+
+    ; 1. Print the initial prompt 
+    MOV AH, 9
+    LEA DX, MSG1
+    INT 21H
+
+    ; 2. Read first number (multiplier) 
+    MOV AH, 1
+    INT 21H
+    SUB AL, 30H     ; Convert ASCII to digit
+    MOV BL, AL      ; Store multiplier in BL
+
+    ; 3. Read and ignore the '*' character 
+    MOV AH, 1
+    INT 21H         ; User types '*', but we don't store it
+
+    ; 4. Read second number (multiplicand) 
+    MOV AH, 1
+    INT 21H
+    SUB AL, 30H     ; Convert ASCII to digit
+
+    ; 5. Multiply 
+    MUL BL          ; AX = AL * BL (e.g., 3 * 4 = 12)
+    
+    ; 6. Adjust result for two-digit output 
+    AAM             ; AH = 1, AL = 2
+    ADD AX, 3030H   ; Convert both to ASCII
+    MOV CX, AX      ; Save result in CX
+
+    ; 7. Print result message 
+    MOV AH, 9
+    LEA DX, MSG2
+    INT 21H
+
+    ; 8. Print the two digits of the result 
+    MOV AH, 2
+    MOV DL, CH      ; Print '1'
+    INT 21H
+    MOV DL, CL      ; Print '2'
+    INT 21H
+
+    MOV AH, 4CH
+    INT 21H
+MAIN ENDP
+END MAIN
+2.1
+
+.MODEL SMALL
+.STACK 100H
+.DATA
+    M1 DB 'Divisor is:4 Dividend is: 11$'
+    M2 DB 0DH, 0AH, 'Quotient is: $'
+    M3 DB 0DH, 0AH, 'Remainder is: $'
+.CODE
+MAIN PROC
+    MOV AX, @DATA
+    MOV DS, AX
+
+    ; 1. Load values into general purpose registers 
+    MOV AX, 11      ; AX is the Dividend
+    MOV BL, 4       ; BL is the Divisor
+
+    ; 2. Perform Division
+    ; DIV BL divides AX by BL. 
+    ; AL stores the Quotient, AH stores the Remainder.
+    DIV BL          
+
+    MOV CX, AX      ; Save results (CL = Quotient, CH = Remainder)
+
+    ; 3. Print "Divisor is:4 Dividend is: 11" 
+    MOV AH, 9
+    LEA DX, M1
+    INT 21H
+
+    ; 4. Print Quotient 
+    MOV AH, 9
+    LEA DX, M2
+    INT 21H
+
+    MOV AH, 2
+    MOV DL, CL      ; Move Quotient to DL
+    ADD DL, 30H     ; Convert to ASCII
+    INT 21H
+
+    ; 5. Print Remainder 
+    MOV AH, 9
+    LEA DX, M3
+    INT 21H
+
+    MOV AH, 2
+    MOV DL, CH      ; Move Remainder to DL
+    ADD DL, 30H     ; Convert to ASCII
+    INT 21H
+
+    ; Exit
+    MOV AH, 4CH
+    INT 21H
+MAIN ENDP
+END MAIN
+
+2.2
+
+.MODEL SMALL
+.STACK 100H
+.DATA
+    PROMPT1 DB 'Enter Dividend : $'
+    PROMPT2 DB 0DH, 0AH, 'Enter Divisor : $'
+    Q_MSG   DB 0DH, 0AH, 'Quotient is: $'
+    R_MSG   DB 0DH, 0AH, 'Remainder is: $'
+
+.CODE
+MAIN PROC
+    MOV AX, @DATA
+    MOV DS, AX
+
+    ; 1. Take 2-Digit Dividend Input
+    MOV AH, 9
+    LEA DX, PROMPT1
+    INT 21H
+
+    ; Read first digit (e.g., '1')
+    MOV AH, 1
+    INT 21H
+    SUB AL, 30H
+    MOV BL, 10
+    MUL BL          ; Multiply first digit by 10
+    MOV CL, AL      ; Store in CL (e.g., 10)
+
+    ; Read second digit (e.g., '1')
+    MOV AH, 1
+    INT 21H
+    SUB AL, 30H
+    ADD CL, AL      ; CL now contains the full number (10 + 1 = 11) 
+
+    ; 2. Take 1-Digit Divisor Input
+    MOV AH, 9
+    LEA DX, PROMPT2
+    INT 21H
+
+    MOV AH, 1
+    INT 21H
+    SUB AL, 30H
+    MOV BL, AL      ; BL is the Divisor (4) 
+
+    ; 3. Perform Division
+    MOV AL, CL      ; Move dividend (11) to AL
+    MOV AH, 0       ; Clear AH
+    DIV BL          ; AL = Quotient (2), AH = Remainder (3) 
+
+    MOV CX, AX      ; Save results (CL = Q, CH = R)
+
+    ; 4. Output Quotient on separate line
+    MOV AH, 9
+    LEA DX, Q_MSG
+    INT 21H
+
+    MOV AH, 2
+    MOV DL, CL      
+    ADD DL, 30H     ; Convert to ASCII 
+    INT 21H
+
+    ; 5. Output Remainder on separate line
+    MOV AH, 9
+    LEA DX, R_MSG
+    INT 21H
+
+    MOV AH, 2
+    MOV DL, CH      
+    ADD DL, 30H     ; Convert to ASCII 
+    INT 21H
+
+    MOV AH, 4CH
+    INT 21H
+MAIN ENDP
+END MAIN
+
+3.1
+
+.MODEL SMALL
+.STACK 100H
+.DATA
+    NAME_ARRAY DB 'Hasan Ahmmad$' 
+    INTRO_MSG  DB 'My name is: $'    ; Message from the lab manual 
+
+.CODE
+MAIN PROC
+    MOV AX, @DATA
+    MOV DS, AX
+    
+    ; 1. Print "My name is: " first
+    MOV AH, 9
+    LEA DX, INTRO_MSG
+    INT 21H
+    
+    ; 2. Setup the loop to print the array content
+    LEA SI, NAME_ARRAY
+    MOV CX, 12      ; Length of "Oliver James" 
+    
+PRINT_LOOP:
+    MOV DL, [SI]
+    MOV AH, 2
+    INT 21H
+    INC SI
+    LOOP PRINT_LOOP ; Repeat for all 12 characters 
+    
+    MOV AH, 4CH
+    INT 21H
+MAIN ENDP
+END MAIN
+
+
+
+3.2
+
+
+
+.MODEL SMALL
+.STACK 100H
+.DATA
+    ; Array with official name in small letters
+    NAME_SMALL DB 'Hasan Ahmmad' 
+    OUT_LBL    DB 'The output is: $'
+
+.CODE
+MAIN PROC
+    MOV AX, @DATA
+    MOV DS, AX
+
+    ; 1. Print the simplified label "The output is: "
+    MOV AH, 9
+    LEA DX, OUT_LBL
+    INT 21H
+
+    ; 2. Setup Loop to convert and print
+    LEA SI, NAME_SMALL
+    MOV CX, 12          ; Length of 'oliver james'
+
+CONVERT_LOOP:
+    MOV AL, [SI]        ; Load lowercase character from array
+    
+    ; Logic to check if the character is a small letter (a-z)
+    CMP AL, 'a'
+    JB SKIP_CONVERSION
+    CMP AL, 'z'
+    JA SKIP_CONVERSION
+    
+    ; Convert to uppercase by subtracting 20H from ASCII
+    SUB AL, 20H         
+
+SKIP_CONVERSION:
+    MOV DL, AL
+    MOV AH, 2           ; DOS function to print a single character
+    INT 21H
+    
+    INC SI              ; Move to the next index in the array
+    LOOP CONVERT_LOOP   ; Repeat for all elements in the array 
+
+    ; Exit program
+    MOV AH, 4CH
+    INT 21H
+MAIN ENDP
+END MAIN
+
+
+
+3.3
+
+
+
+.MODEL SMALL
+.STACK 100H
+.DATA
+    OUT_LBL DB 'The output is: $'
+
+.CODE
+MAIN PROC
+    MOV AX, @DATA
+    MOV DS, AX
+
+    ; 1. Print the label
+    MOV AH, 9
+    LEA DX, OUT_LBL
+    INT 21H
+
+    ; 2. Initialize registers for the loop
+    MOV CX, 9       ; Counter for numbers 1 to 9
+    MOV AL, 0       ; Register to hold the sum
+
+SUM_LOOP:
+    ADD AL, CL      ; Add current value of CX (9, 8, 7...) to AL
+    LOOP SUM_LOOP   ; Decrement CX and repeat until CX is 0
+
+    ; 3. Use AAA to adjust the result (45) for printing
+    ; Since AL is 45 (2DH), we need to split it into 4 and 5
+    MOV AH, 0       ; Clear AH for the adjustment
+    
+    ; Logic to handle sum > 9 using AAA in a loop-style adjustment
+    ; Or more simply for a fixed result like 45:
+    MOV BL, 10
+    DIV BL          ; Divide 45 by 10 -> AL = 4, AH = 5
+    
+    ; In many lab environments, AAA is used after each addition. 
+    ; However, for the total sum:
+    MOV BX, AX      ; Save Quotient (4) and Remainder (5)
+    
+    ; 4. Print Tens Digit (4)
+    MOV AH, 2
+    MOV DL, BL
+    ADD DL, 30H     ; Convert 4 to '4'
+    INT 21H
+    
+    ; 5. Print Units Digit (5)
+    MOV DL, BH
+    ADD DL, 30H     ; Convert 5 to '5'
+    INT 21H
+
+    ; Exit
+    MOV AH, 4CH
+    INT 21H
+MAIN ENDP
+END MAIN
+
+4.1
+
+.MODEL SMALL
+.STACK 100H
+.DATA
+    MSG DB 'After swap: $'
+.CODE
+MAIN PROC
+    MOV AX, @DATA
+    MOV DS, AX
+
+    ; 1. Assign initial values to registers 
+    MOV CX, 'P'     ; CX = 'P'
+    MOV BX, 'Q'     ; BX = 'Q'
+
+    ; 2. Push values onto the stack
+    ; The stack follows Last-In, First-Out (LIFO)
+    PUSH CX         ; Stack top: 'P'
+    PUSH BX         ; Stack top: 'Q', then 'P'
+
+    ; 3. Pop values in reverse order to swap 
+    ; Popping the last value pushed ('Q') into CX
+    POP CX          ; CX now becomes 'Q'
+    
+    ; Popping the first value pushed ('P') into BX
+    POP BX          ; BX now becomes 'P'
+
+    ; 4. Verification: Print the results
+    MOV AH, 9
+    LEA DX, MSG
+    INT 21H
+
+    ; Print CX (Should be 'Q')
+    MOV AH, 2
+    MOV DL, CL
+    INT 21H
+
+    ; Print Space
+    MOV DL, ' '
+    INT 21H
+
+    ; Print BX (Should be 'P')
+    MOV DL, BL
+    INT 21H
+
+    ; Exit
+    MOV AH, 4CH
+    INT 21H
+MAIN ENDP
+END MAIN
+
+
+4.2
+
+
+.MODEL SMALL
+.STACK 100H
+.DATA
+    ; Define the array with your full name
+    MY_NAME DB 'Hasan Ahmmad' 
+    OUT_LBL DB 'The reverse name is: $'
+
+.CODE
+MAIN PROC
+    MOV AX, @DATA
+    MOV DS, AX
+
+    ; 1. Print the output label
+    MOV AH, 9
+    LEA DX, OUT_LBL
+    INT 21H
+
+    ; 2. Push each character onto the Stack
+    LEA SI, MY_NAME
+    MOV CX, 12          ; Length of "Hasan Ahmmad" is 12 characters
+
+PUSH_LOOP:
+    MOV AL, [SI]
+    MOV AH, 0           ; Clear AH because we push 16-bit registers (AX)
+    PUSH AX             ; Push the character onto the stack
+    INC SI              ; Move to next character
+    LOOP PUSH_LOOP
+
+    ; 3. Pop each character from the Stack and print it
+    ; This will print in reverse order (LIFO)
+    MOV CX, 12          ; Reset counter for 12 characters
+
+POP_LOOP:
+    POP AX              ; Get the last character pushed
+    MOV DL, AL          ; Move character to DL for printing
+    MOV AH, 2           ; DOS function to print a character
+    INT 21H
+    LOOP POP_LOOP
+
+    ; Exit program
+    MOV AH, 4CH
+    INT 21H
+MAIN ENDP
+END MAIN
+
+
+4.3
+
+
+.MODEL SMALL
+.STACK 100H
+.DATA
+    ; Define arrays with your specific details 
+    stdID      DB '2243081101'
+    livingCity DB 'Gazipur'
+    
+    MSG1 DB 'Reverse student id is: $'
+    MSG2 DB 0DH, 0AH, 'Reverse city name is: $'
+
+.CODE
+MAIN PROC
+    MOV AX, @DATA
+    MOV DS, AX
+
+    ; --- Part 1: Reverse Student ID ---
+    MOV AH, 9
+    LEA DX, MSG1
+    INT 21H
+
+    LEA SI, stdID
+    MOV CX, 10          ; Length of student ID (10 digits)
+
+PUSH_ID:
+    MOV AL, [SI]
+    MOV AH, 0           ; Clear AH for 16-bit push
+    PUSH AX             ; Push digit onto stack 
+    INC SI
+    LOOP PUSH_ID
+
+    MOV CX, 10
+POP_ID:
+    POP AX              ; Pop last digit first (LIFO)
+    MOV DL, AL
+    MOV AH, 2
+    INT 21H
+    LOOP POP_ID
+
+    ; --- Part 2: Reverse City Name ---
+    MOV AH, 9
+    LEA DX, MSG2
+    INT 21H
+
+    LEA SI, livingCity
+    MOV CX, 7           ; Length of "Gazipur" (7 characters)
+
+PUSH_CITY:
+    MOV AL, [SI]
+    MOV AH, 0
+    PUSH AX             ; Push character onto stack 
+    INC SI
+    LOOP PUSH_CITY
+
+    MOV CX, 7
+POP_CITY:
+    POP AX              ; Pop last character first
+    MOV DL, AL
+    MOV AH, 2
+    INT 21H
+    LOOP POP_CITY
+
+    ; Exit
+    MOV AH, 4CH
+    INT 21H
+MAIN ENDP
+END MAIN
