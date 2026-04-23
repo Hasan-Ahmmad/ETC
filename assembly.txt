@@ -1,0 +1,254 @@
+1.mul
+
+.model small
+.stack 100h
+.data
+    ; the 10, 13 acts as a new line (\n) so the text doesn't bunch up
+    str1 db "enter the multipicand: $"
+    str2 db 10,13, "enter multiplier: $"
+    resultstr db 10,13, "the result is: $"
+    
+.code
+main proc
+    
+    ; initialize the data segment to access our strings
+    mov ax, @data
+    mov ds, ax
+    
+    ; display the first prompt using function 09h
+    mov dx, offset str1
+    mov ah, 9
+    int 21h
+    
+    ; read the first character from the user
+    mov ah, 1
+    int 21h
+    ; convert ascii '4' (52) to actual number 4 by subtracting 48
+    sub al, 48
+    ; store it in bl so al is free for the next input
+    mov bl, al
+    
+    ; display the second prompt
+    mov dx, offset str2
+    mov ah, 9
+    int 21h
+    
+    ; read the second character
+    mov ah, 1
+    int 21h
+    ; convert ascii to digit again
+    sub al, 48
+    
+    ; multiply al (second number) by bl (first number)
+    ; result (e.g., 16) is stored in ax
+    mul bl          
+    
+    ; aam (ascii adjust for multiplication) splits ax into digits
+    ; it divides al by 10. quotient (1) goes to ah, remainder (6) to al
+    aam             
+    
+    ; copy the result to cx so we don't lose it during string printing
+    mov cx, ax      
+    
+    ; display the result label
+    mov dx, offset resultstr
+    mov ah, 9
+    int 21h
+    
+    ; print the first digit (the tens place)
+    ; ch holds 1, so we add 48 to turn it back into the character '1'
+    mov dl, ch
+    add dl, 48
+    mov ah, 2
+    int 21h
+    
+    ; print the second digit (the units place)
+    ; cl holds 6, so we add 48 to turn it back into the character '6'
+    mov dl, cl
+    add dl, 48
+    mov ah, 2
+    int 21h
+    
+    ; standard dos exit to return control to the system
+    mov ah, 4ch
+    int 21h
+    
+main endp
+end main
+
+2. div
+
+.model small
+.stack 100h
+.data
+    str1 db "enter the dividend (2 digits): $"
+    str2 db 10,13, "enter divisor: $"
+    q_msg db 10,13, "the quotient is: $"
+    r_msg db 10,13, "the remainder is: $"
+    
+.code
+main proc
+    
+    ; initialize data segment
+    mov ax, @data
+    mov ds, ax
+    
+    ; display dividend prompt
+    mov dx, offset str1
+    mov ah, 9
+    int 21h
+    
+    ; read first digit (tens place)
+    mov ah, 1
+    int 21h
+    sub al, 48
+    mov bl, 10
+    mul bl          ; multiply by 10
+    mov cl, al      ; store tens in cl
+    
+    ; read second digit (units place)
+    mov ah, 1
+    int 21h
+    sub al, 48
+    add cl, al      ; cl now has the full dividend (e.g., 25)
+    
+    ; display divisor prompt
+    mov dx, offset str2
+    mov ah, 9
+    int 21h
+    
+    ; read divisor
+    mov ah, 1
+    int 21h
+    sub al, 48
+    mov bl, al      ; store divisor in bl
+    
+    ; prepare for division
+    mov al, cl      ; move dividend to al
+    mov ah, 0       ; clear ah so ax = dividend
+    
+    ; perform division: ax / bl
+    div bl          ; al = quotient, ah = remainder
+    
+    ; copy results to cx to print messages
+    mov cx, ax      
+    
+    ; display quotient message
+    mov dx, offset q_msg
+    mov ah, 9
+    int 21h
+    
+    ; print quotient
+    mov dl, cl      ; quotient is in cl (from al)
+    add dl, 48
+    mov ah, 2
+    int 21h
+    
+    ; display remainder message
+    mov dx, offset r_msg
+    mov ah, 9
+    int 21h
+    
+    ; print remainder
+    mov dl, ch      ; remainder is in ch (from ah)
+    add dl, 48
+    mov ah, 2
+    int 21h
+    
+    ; exit program
+    mov ah, 4ch
+    int 21h
+    
+main endp
+end main
+
+
+3. loop sum
+
+.model small
+.stack 100h
+.data
+    ; defining the array with your values
+    arr db 2, 3, 1, 2, 0, 1
+    msg db 'the sum of the array is: $'
+
+.code
+main proc
+    mov ax, @data
+    mov ds, ax
+
+    ; print the message
+    mov ah, 9
+    lea dx, msg
+    int 21h
+
+    ; initialize registers for the loop
+    lea si, arr     ; point si to the start of the array
+    mov cx, 6       ; the array has 6 elements
+    mov al, 0       ; al will hold the running sum
+
+sum_loop:
+    add al, [si]    ; add the value at the current array index to al
+    inc si          ; move to the next element in the array
+    loop sum_loop   ; repeat until cx becomes 0
+
+    ; now al contains the sum (9)
+    ; convert the number to ascii for printing
+    mov dl, al
+    add dl, 48      ; add 48 to turn 9 into '9'
+    
+    ; print the character
+    mov ah, 2
+    int 21h
+
+    ; exit the program
+    mov ah, 4ch
+    int 21h
+main endp
+end main
+
+4. reverse name
+
+.model small
+.stack 100h
+.data
+    ; the array containing your full phrase
+    my_name db 'MY NAME IS AHMMAD'
+    msg db 'reverse output: $'
+
+.code
+main proc
+    mov ax, @data
+    mov ds, ax
+
+    ; 1. print the initial label
+    mov ah, 9
+    lea dx, msg
+    int 21h
+
+    ; 2. push characters onto the stack
+    lea si, my_name     ; point si to the start of the array
+    mov cx, 17          ; length of 'my name is ahmmad' is 17
+
+push_loop:
+    mov al, [si]        ; load character into al
+    mov ah, 0           ; clear ah because stack pushes must be 16-bit
+    push ax             ; push the character onto the stack
+    inc si              ; move to next character in array
+    loop push_loop
+
+    ; 3. pop characters from the stack (reverses the order)
+    mov cx, 17          ; reset counter for 17 characters
+
+pop_loop:
+    pop ax              ; pop the last character pushed (lifo)
+    mov dl, al          ; move the character to dl for printing
+    mov ah, 2           ; dos function to print a single character
+    int 21h
+    loop pop_loop
+
+    ; exit program
+    mov ah, 4ch
+    int 21h
+main endp
+end main
